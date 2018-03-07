@@ -37,7 +37,7 @@
   go-tests = true
   unused-packages = true
 
-[metadata]
+[metadata.heroku]
   root-package = "github.com/WasinWatt/game-bot"
   install = ["./..."]
 
