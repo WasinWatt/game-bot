@@ -5,9 +5,9 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/WasinWatt/game-bot/config"
 	"github.com/jinzhu/configor"
 	"github.com/line/line-bot-sdk-go/linebot"
-	"github.com/wasinwatt/game-bot/config"
 )
 
 // GameBot is the app's bot
