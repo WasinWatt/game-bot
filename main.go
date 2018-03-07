@@ -25,6 +25,12 @@ func main() {
 	must(err)
 
 	mux := http.NewServeMux()
+	mux.HandleFunc("/health", func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		response, _ := json.Marshal("Status OK")
+		w.WriteHeader(200)
+		w.Write(response)
+	})
 	mux.Handle("/bot", gameBot)
 
 	must(err)
@@ -47,10 +53,10 @@ func (gb *GameBot) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			}
 		}
 	}
-	response, _ := json.Marshal("Connected!")
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-	w.Write(response)
+	// response, _ := json.Marshal("Connected!")
+	// w.Header().Set("Content-Type", "application/json")
+	// w.WriteHeader(200)
+	// w.Write(response)
 }
 
 func must(err error) {
