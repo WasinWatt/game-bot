@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/WasinWatt/game-bot/config"
 	"github.com/jinzhu/configor"
@@ -35,9 +36,12 @@ func main() {
 
 	must(err)
 
-	// addr := 3000
-	http.ListenAndServe(":3000", mux)
-	log.Println("Listening on port: 3000")
+	addr := os.Getenv("PORT")
+	if addr == "" {
+		addr = "3000"
+	}
+	http.ListenAndServe(":"+addr, mux)
+	log.Println("Listening on port: " + addr)
 }
 
 func (gb *GameBot) ServeHTTP(w http.ResponseWriter, req *http.Request) {
