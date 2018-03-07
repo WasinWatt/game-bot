@@ -34,8 +34,10 @@ func main() {
 	mux.Handle("/bot", gameBot)
 
 	must(err)
-	http.ListenAndServe(":3001", mux)
-	log.Println("Listening on port: 3001")
+
+	// addr := 3000
+	http.ListenAndServe(":3000", mux)
+	log.Println("Listening on port: 3000")
 }
 
 func (gb *GameBot) ServeHTTP(w http.ResponseWriter, req *http.Request) {
