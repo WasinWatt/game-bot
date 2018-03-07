@@ -36,3 +36,8 @@
 [prune]
   go-tests = true
   unused-packages = true
+
+[metadata]
+  root-package = "github.com/WasinWatt/game-bot"
+  install = ["./..."]
+

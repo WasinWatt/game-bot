@@ -33,13 +33,20 @@ func main() {
 }
 
 func (gb *GameBot) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	// events, err := gb.bot.ParseRequest(req)
-	// must(err)
-	// for _, event := range events {
-	// 	if event.Type == linebot.EventTypeMessage {
-	// 		// Do Something...
-	// 	}
-	// }
+	events, err := gb.bot.ParseRequest(req)
+	must(err)
+	for _, event := range events {
+		if event.Type == linebot.EventTypeMessage {
+			userID := event.Source.UserID
+			switch message := event.Message.(type) {
+			case *linebot.TextMessage:
+				if _, err = gb.bot.ReplyMessage(event.ReplyToken,
+					linebot.NewTextMessage(message.ID+":"+message.Text+" OK!"+" By: "+userID)).Do(); err != nil {
+					log.Print(err)
+				}
+			}
+		}
+	}
 	response, _ := json.Marshal("Connected!")
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
