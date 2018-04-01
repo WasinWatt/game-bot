@@ -11,8 +11,8 @@ import (
 // MakeAPIHandler make default handler
 func MakeAPIHandler(gb *GameBot) http.Handler {
 	mux := http.NewServeMux()
-	mux.Handle("/", manageLineRequest(gb))
-	mux.Handle("/health", checkRequest())
+	mux.HandleFunc("/", manageLineRequest(gb))
+	mux.HandleFunc("/health", checkRequest())
 	return mux
 }
 
