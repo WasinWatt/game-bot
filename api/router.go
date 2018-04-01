@@ -11,8 +11,8 @@ import (
 // MakeAPIHandler make default handler
 func MakeAPIHandler(gb *GameBot) http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", manageLineRequest(gb))
-	mux.HandleFunc("/health", checkRequest())
+	mux.Handle("/health", checkRequest())
+	mux.Handle("/line", manageLineRequest(gb))
 	return mux
 }
 
@@ -20,6 +20,7 @@ func manageLineRequest(gb *GameBot) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		events, err := gb.Client.ParseRequest(req)
 		if err != nil {
+			log.Println(err)
 			log.Fatal(err)
 		}
 		for _, event := range events {
