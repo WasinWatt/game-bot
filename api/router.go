@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 
@@ -11,6 +12,7 @@ import (
 func MakeAPIHandler(gb *GameBot) http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("/", manageLineRequest(gb))
+	mux.Handle("/health", checkRequest())
 	return mux
 }
 
@@ -29,6 +31,15 @@ func manageLineRequest(gb *GameBot) http.HandlerFunc {
 				}
 			}
 		}
+	}
+}
+
+func checkRequest() http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		response, _ := json.Marshal("/api is ok")
+		w.WriteHeader(200)
+		w.Write(response)
 	}
 }
 

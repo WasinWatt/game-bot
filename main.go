@@ -30,7 +30,7 @@ func main() {
 		w.Write(response)
 	})
 
-	mux.Handle("/api", http.StripPrefix("/api", api.MakeAPIHandler(gameBot)))
+	mux.Handle("/api/", http.StripPrefix("/api", api.MakeAPIHandler(gameBot)))
 
 	must(err)
 
