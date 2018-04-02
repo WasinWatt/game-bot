@@ -23,6 +23,10 @@ func main() {
 		Client: bot,
 	}
 	mux := http.NewServeMux()
+
+	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+		http.NotFound(w, req)
+	})
 	mux.HandleFunc("/health", func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		response, _ := json.Marshal("Status OK")
