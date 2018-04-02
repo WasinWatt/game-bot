@@ -10,6 +10,7 @@ import (
 	"github.com/WasinWatt/game-bot/config"
 	"github.com/jinzhu/configor"
 	"github.com/line/line-bot-sdk-go/linebot"
+	mgo "gopkg.in/mgo.v2"
 )
 
 func main() {
@@ -19,14 +20,25 @@ func main() {
 	bot, err := linebot.New(config.ChannelSecret, config.ChannelAccToken)
 	must(err)
 
+	dialInfo, err := mgo.ParseURL(config.MongoURI)
+	must(err)
+
+	session, err := mgo.DialWithInfo(dialInfo)
+	must(err)
+	defer session.Close()
+
+	log.Println("Connected to DB")
+
 	gameBot := &api.GameBot{
-		Client: bot,
+		Client:  bot,
+		Session: session,
 	}
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 		http.NotFound(w, req)
 	})
+
 	mux.HandleFunc("/health", func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		response, _ := json.Marshal("Status OK")
@@ -44,6 +56,19 @@ func main() {
 	}
 	http.ListenAndServe(":"+addr, mux)
 	log.Println("Listening on port: " + addr)
+}
+
+func ensureIndex(session *mgo.Session) {
+	c := session.DB("undercover").C("user")
+	index := mgo.Index{
+		Key:        []string{"id"},
+		Unique:     true,
+		DropDups:   true,
+		Background: true,
+		Sparse:     true,
+	}
+	err := c.EnsureIndex(index)
+	must(err)
 }
 
 func must(err error) {

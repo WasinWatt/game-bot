@@ -4,4 +4,5 @@ package config
 type Config struct {
 	ChannelSecret   string
 	ChannelAccToken string
+	MongoURI        string
 }
