@@ -4,7 +4,10 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strings"
 
+	"github.com/WasinWatt/game-bot/room"
+	"github.com/WasinWatt/game-bot/user"
 	"github.com/line/line-bot-sdk-go/linebot"
 )
 
@@ -45,8 +48,57 @@ func checkRequest() http.HandlerFunc {
 }
 
 func handleTextMessage(gb *GameBot, event linebot.Event, message *linebot.TextMessage, userID string) {
-	_, err := gb.Client.ReplyMessage(event.ReplyToken,
-		linebot.NewTextMessage(message.ID+":"+message.Text+" OK!"+" By: "+userID)).Do()
+	var words []string
+	words = strings.Split(message.Text, " ")
+	switch words[0] {
+	case "create":
+		if len(words) < 2 {
+			replyDefaultMessage(gb, event)
+			return
+		}
+		err := room.Create(gb.Session, userID, words[1])
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		reply := "Room: " + words[1] + " creation successful!"
+		replyMessage(gb, event, reply)
+
+	case "join":
+		if len(words) < 3 {
+			replyDefaultMessage(gb, event)
+		} else {
+			u := &user.User{
+				ID:     userID,
+				RoomID: words[1],
+				Name:   words[2],
+			}
+			err := user.JoinRoom(gb.Session, u)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			reply := "Join room: " + words[1] + " successful!"
+			replyMessage(gb, event, reply)
+		}
+	default:
+		replyDefaultMessage(gb, event)
+	}
+
+}
+
+func replyDefaultMessage(gb *GameBot, event linebot.Event) {
+	message := `ทำตามคำสั่งด้านล่างเท่านั้นนะจ๊ะ
+- create {เลขห้อง} : สร้างห้องเพื่อเล่นเกม
+- join {เลขห้อง} {ชื่อที่ใช้เล่นเกม} : เข้าห้องเพื่อรอเล่นเกม
+- leave : ออกจากห้องเกมปัจจุบัน
+- help : แสดงข้อความคำสั่งทั้งหมด`
+
+	replyMessage(gb, event, message)
+}
+
+func replyMessage(gb *GameBot, event linebot.Event, message string) {
+	_, err := gb.Client.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(message)).Do()
 	if err != nil {
 		log.Fatal(err)
 	}
