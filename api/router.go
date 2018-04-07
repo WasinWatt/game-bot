@@ -31,7 +31,11 @@ func manageLineRequest(gb *GameBot) http.HandlerFunc {
 				userID := event.Source.UserID
 				switch message := event.Message.(type) {
 				case *linebot.TextMessage:
-					handleTextMessage(gb, event, message, userID)
+					err := handleTextMessage(gb, message, userID)
+					if err != nil {
+						w.Header().Set("Content-type", "application/json; charset=utf-8")
+						w.WriteHeader(http.StatusInternalServerError)
+					}
 				}
 			}
 		}
@@ -47,26 +51,37 @@ func checkRequest() http.HandlerFunc {
 	}
 }
 
-func handleTextMessage(gb *GameBot, event linebot.Event, message *linebot.TextMessage, userID string) {
+func handleTextMessage(gb *GameBot, message *linebot.TextMessage, userID string) error {
 	var words []string
 	words = strings.Split(message.Text, " ")
-	switch words[0] {
+	command := strings.ToLower(words[0])
+	switch command {
 	case "create":
-		if len(words) < 2 {
-			replyDefaultMessage(gb, event)
-			return
+		if len(words) < 3 {
+			replyDefaultMessage(gb, userID)
+			return nil
 		}
-		err := room.Create(gb.Session, userID, words[1])
+		err := room.Create(gb.Session, words[1], userID)
 		if err != nil {
-			log.Fatal(err)
+			return err
+		}
+
+		u := &user.User{
+			ID:     userID,
+			RoomID: words[1],
+			Name:   words[2],
+		}
+		err = user.JoinRoom(gb.Session, u)
+		if err != nil {
+			return err
 		}
 
 		reply := "Room: " + words[1] + " creation successful!"
-		replyMessage(gb, event, reply)
+		replyMessage(gb, userID, reply)
 
 	case "join":
 		if len(words) < 3 {
-			replyDefaultMessage(gb, event)
+			replyDefaultMessage(gb, userID)
 		} else {
 			u := &user.User{
 				ID:     userID,
@@ -75,31 +90,62 @@ func handleTextMessage(gb *GameBot, event linebot.Event, message *linebot.TextMe
 			}
 			err := user.JoinRoom(gb.Session, u)
 			if err != nil {
-				log.Fatal(err)
+				replyInternalErrorMessage(gb, userID)
+				return err
 			}
 
 			reply := "Join room: " + words[1] + " successful!"
-			replyMessage(gb, event, reply)
+			replyMessage(gb, userID, reply)
 		}
-	default:
-		replyDefaultMessage(gb, event)
-	}
 
+	case "list":
+		x, err := user.Get(gb.Session, userID)
+		if err == user.ErrNotFound {
+			replyMessage(gb, userID, "You are not in any room. Please join first.")
+		}
+		if err != nil {
+			replyInternalErrorMessage(gb, userID)
+			return err
+		}
+
+		players, err := user.GetAllByRoomID(gb.Session, x.RoomID)
+		if err == user.ErrNotFound {
+			replyMessage(gb, userID, "Nobody is in the room.")
+			return nil
+		}
+		if err != nil {
+			replyInternalErrorMessage(gb, userID)
+			return err
+		}
+
+		reply := ""
+		for i := range players {
+			reply = reply + players[i].Name + "\n"
+			log.Println(players[i].Name)
+		}
+		replyMessage(gb, userID, reply)
+
+	default:
+		replyDefaultMessage(gb, userID)
+	}
+	return nil
 }
 
-func replyDefaultMessage(gb *GameBot, event linebot.Event) {
+func replyInternalErrorMessage(gb *GameBot, userID string) {
+	message := `ระบบขัดข้อง กรุณาลองใหม่`
+	replyMessage(gb, userID, message)
+}
+
+func replyDefaultMessage(gb *GameBot, userID string) {
 	message := `ทำตามคำสั่งด้านล่างเท่านั้นนะจ๊ะ
 - create {เลขห้อง} : สร้างห้องเพื่อเล่นเกม
 - join {เลขห้อง} {ชื่อที่ใช้เล่นเกม} : เข้าห้องเพื่อรอเล่นเกม
 - leave : ออกจากห้องเกมปัจจุบัน
 - help : แสดงข้อความคำสั่งทั้งหมด`
 
-	replyMessage(gb, event, message)
+	replyMessage(gb, userID, message)
 }
 
-func replyMessage(gb *GameBot, event linebot.Event, message string) {
-	_, err := gb.Client.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(message)).Do()
-	if err != nil {
-		log.Fatal(err)
-	}
+func replyMessage(gb *GameBot, userID string, message string) {
+	gb.Client.PushMessage(userID, linebot.NewTextMessage(message)).Do()
 }

@@ -1,6 +1,8 @@
 package user
 
 import (
+	"log"
+
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -21,8 +23,8 @@ func Register(s *mgo.Session, u *User) error {
 func IsExists(s *mgo.Session, userID string) (bool, error) {
 	session := s.Copy()
 	c := session.DB("undercover").C("users")
-	var user User
-	err := c.Find(bson.M{"id": userID}).One(&user)
+	var u User
+	err := c.Find(bson.M{"id": userID}).One(&u)
 	if err == mgo.ErrNotFound {
 		return false, nil
 	}
@@ -45,4 +47,18 @@ func FindByRoomID(s *mgo.Session, roomID string) ([]*User, error) {
 	}
 
 	return xs, nil
+}
+
+// FindByID finds user by user id
+func FindByID(s *mgo.Session, userID string) (*User, error) {
+	session := s.Copy()
+	c := session.DB("undercover").C("users")
+	var u User
+	err := c.Find(bson.M{"id": userID}).One(&u)
+	if err != nil {
+		return nil, err
+	}
+	log.Println(u)
+
+	return &u, nil
 }

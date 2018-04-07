@@ -59,7 +59,7 @@ func main() {
 }
 
 func ensureIndex(session *mgo.Session) {
-	c := session.DB("undercover").C("user")
+	c := session.DB("undercover").C("users")
 	index := mgo.Index{
 		Key:        []string{"id"},
 		Unique:     true,
