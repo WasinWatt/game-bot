@@ -40,6 +40,44 @@ func JoinRoom(s *mgo.Session, u *User) error {
 	return nil
 }
 
+// Leave remove user from the database
+func Leave(s *mgo.Session, userID string) (bool, []*User, error) {
+	player, err := FindByID(s, userID)
+	if err == mgo.ErrNotFound {
+		return false, nil, ErrNotFound
+	}
+	if err != nil {
+		return false, nil, err
+	}
+
+	isOwner, err := room.IsOwner(s, player.RoomID, userID)
+	if err != nil {
+		return false, nil, err
+	}
+
+	if isOwner {
+		players, err := FindByRoomID(s, player.RoomID)
+		err = RemoveAllByRoomID(s, player.RoomID)
+		if err != nil {
+			return true, nil, err
+		}
+
+		err = room.RemoveByID(s, player.RoomID)
+		if err != nil {
+			return true, players, err
+		}
+
+		return true, players, nil
+	}
+
+	err = RemoveByID(s, userID)
+	if err != nil {
+		return false, nil, err
+	}
+
+	return false, nil, nil
+}
+
 // Get finds a user
 func Get(s *mgo.Session, userID string) (*User, error) {
 	user, err := FindByID(s, userID)
@@ -61,5 +99,15 @@ func GetAllByRoomID(s *mgo.Session, roomID string) ([]*User, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return xs, nil
+}
+
+// AddRole add role to a user
+func AddRole(s *mgo.Session, userID string, role int) error {
+	err := SetRole(s, userID, role)
+	if err != nil {
+		return err
+	}
+	return nil
 }

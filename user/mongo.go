@@ -1,8 +1,6 @@
 package user
 
 import (
-	"log"
-
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -58,7 +56,42 @@ func FindByID(s *mgo.Session, userID string) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Println(u)
 
 	return &u, nil
+}
+
+// RemoveByID deletes a user by user id
+func RemoveByID(s *mgo.Session, userID string) error {
+	session := s.Copy()
+	c := session.DB("undercover").C("users")
+	err := c.Remove(bson.M{"id": userID})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// RemoveAllByRoomID deletes all users in room id
+func RemoveAllByRoomID(s *mgo.Session, roomID string) error {
+	session := s.Copy()
+	c := session.DB("undercover").C("users")
+	_, err := c.RemoveAll(bson.M{"roomId": roomID})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// SetRole set user role
+func SetRole(s *mgo.Session, userID string, role int) error {
+	session := s.Copy()
+	c := session.DB("undercover").C("users")
+	err := c.Update(bson.M{"id": userID}, bson.M{"role": role})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
