@@ -3,11 +3,13 @@ package api
 import (
 	"encoding/json"
 	"log"
+	"math/rand"
 	"net/http"
 	"strings"
 
 	"github.com/WasinWatt/game-bot/room"
 	"github.com/WasinWatt/game-bot/user"
+	"github.com/WasinWatt/game-bot/vocab"
 	"github.com/line/line-bot-sdk-go/linebot"
 )
 
@@ -153,76 +155,141 @@ func handleTextMessage(gb *GameBot, message *linebot.TextMessage, userID string)
 		}
 		replyMessage(gb, userID, reply)
 
-		// } else if command == "start" || command == "begin" {
-		// 	players, err := user.GetAllByRoomID(gb.Session, userID)
+	} else if command == "start" || command == "begin" {
+		players, err := user.GetAllByRoomID(gb.Session, userID)
 
-		// 	if err != nil {
-		// 		replyInternalErrorMessage(gb, userID)
-		// 		return err
-		// 	}
+		if err != nil {
+			replyInternalErrorMessage(gb, userID)
+			return err
+		}
 
-		// 	if len(players) < 5 {
-		// 		for i := range players {
-		// 			go func(id string) {
-		// 				replyMessage(gb, id, "Need at least 5 players to begin the game")
-		// 			}(players[i].ID)
-		// 		}
-		// 		return nil
-		// 	}
+		if len(players) < 5 {
+			for i := range players {
+				go func(id string) {
+					replyMessage(gb, id, "Need at least 5 players to begin the game")
+				}(players[i].ID)
+			}
+			return nil
+		}
 
-		// 	v, err := vocab.Get(gb.Session)
+		v, err := vocab.Get(gb.Session)
 
-		// 	if err != nil {
-		// 		replyInternalErrorMessage(gb, userID)
-		// 		return err
-		// 	}
+		if err != nil {
+			replyInternalErrorMessage(gb, userID)
+			return err
+		}
 
-		// 	var normalWord string
-		// 	var undercoverWord string
-		// 	if rand.Intn(2) == 0 {
-		// 		normalWord = v.First
-		// 		undercoverWord = v.Second
-		// 	} else {
-		// 		normalWord = v.Second
-		// 		undercoverWord = v.First
-		// 	}
+		var normalWord string
+		var undercoverWord string
+		if rand.Intn(2) == 0 {
+			normalWord = v.First
+			undercoverWord = v.Second
+		} else {
+			normalWord = v.Second
+			undercoverWord = v.First
+		}
 
-		// 	roleNumList := make([]int, 10)
-		// 	roleNumList[0] = 0
-		// 	roleNumList[0] = 1
-		// 	roleNumList[0] = 2
-		// 	roleNumList[0] = 2
-		// 	roleNumList[0] = 2
+		roleNumList := make([]int, 10)
+		roleNumList[0] = 0
+		roleNumList[0] = 1
+		roleNumList[0] = 2
+		roleNumList[0] = 2
+		roleNumList[0] = 2
 
-		// 	if len(players) == 6 {
-		// 		roleNumList = append(roleNumList, 1)
-		// 	}
+		if len(players) == 6 {
+			roleNumList = append(roleNumList, 1)
+		}
 
-		// 	if len(players) == 7 {
-		// 		roleNumList = append(roleNumList, 0)
-		// 	}
+		if len(players) == 7 {
+			roleNumList = append(roleNumList, 0)
+		}
 
-		// 	shuffledList := make([]int, len(players))
-		// 	perm := rand.Perm(len(players))
-		// 	for i, v := range perm {
-		// 		shuffledList[v] = roleNumList[i]
-		// 	}
+		shuffledList := make([]int, len(players))
+		perm := rand.Perm(len(players))
+		for i, v := range perm {
+			shuffledList[v] = roleNumList[i]
+		}
 
-		// 	for i := range shuffledList {
-		// 		var userWord string
-		// 		switch shuffledList[i] {
-		// 		case 0:
-		// 			userWord = ""
-		// 		case 1:
-		// 			userWord = undercoverWord
-		// 		case 2:
-		// 			userWord = normalWord
-		// 		}
-		// 		go func(i int, userWord string) {
-		// 			err := user.AddRole(gb.Session, players[i].ID, shuffledList[i], userWord)
-		// 			replyMessage(gb, players[i].ID, userWord)
-		// 		}(i, userWord)
-		// 	}
+		for i := range shuffledList {
+			var userWord string
+			switch shuffledList[i] {
+			case 0:
+				userWord = ""
+			case 1:
+				userWord = undercoverWord
+			case 2:
+				userWord = normalWord
+			}
+			go func(i int, userWord string) {
+				err := user.AddRole(gb.Session, players[i].ID, shuffledList[i], userWord)
+				replyMessage(gb, players[i].ID, userWord)
+			}(i, userWord)
+		}
+
+	} else if command == "add" || command == "vocab" {
+		if len(words) < 3 {
+			replyDefaultMessage(gb, userID)
+			return nil
+		}
+
+		err := vocab.Add(gb.Session, words[1], words[2])
+		if err != nil {
+			replyInternalErrorMessage(gb, userID)
+		}
+
+		reply := "Add vocab successful!"
+		replyMessage(gb, userID, reply)
+
+	} else if command == "mockstart" || command == "mock_egin" {
+		players, err := user.GetAllByRoomID(gb.Session, userID)
+
+		if err != nil {
+			replyInternalErrorMessage(gb, userID)
+			return err
+		}
+
+		v, err := vocab.Get(gb.Session)
+
+		if err != nil {
+			replyInternalErrorMessage(gb, userID)
+			return err
+		}
+
+		var normalWord string
+		var undercoverWord string
+		if rand.Intn(2) == 0 {
+			normalWord = v.First
+			undercoverWord = v.Second
+		} else {
+			normalWord = v.Second
+			undercoverWord = v.First
+		}
+
+		roleNumList := make([]int, 10)
+		roleNumList[0] = 1
+		roleNumList[0] = 2
+
+		shuffledList := make([]int, len(players))
+		perm := rand.Perm(len(players))
+		for i, v := range perm {
+			shuffledList[v] = roleNumList[i]
+		}
+
+		for i := range shuffledList {
+			var userWord string
+			switch shuffledList[i] {
+			case 0:
+				userWord = ""
+			case 1:
+				userWord = undercoverWord
+			case 2:
+				userWord = normalWord
+			}
+			go func(i int, userWord string) {
+				err := user.AddRole(gb.Session, players[i].ID, shuffledList[i], userWord)
+				replyMessage(gb, players[i].ID, userWord)
+			}(i, userWord)
+		}
 
 	} else {
 		replyDefaultMessage(gb, userID)
