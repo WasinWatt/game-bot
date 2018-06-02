@@ -5,8 +5,14 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+type Repository struct{}
+
+func NewRepository() *Repository {
+	return &Repository{}
+}
+
 // Register registers a user
-func Register(s *mgo.Session, u *User) error {
+func (r *Repository) Register(s *mgo.Session, u *User) error {
 	session := s.Copy()
 	c := session.DB("undercover").C("users")
 	err := c.Insert(bson.M{
@@ -18,7 +24,7 @@ func Register(s *mgo.Session, u *User) error {
 }
 
 // IsExists checks if the user exists
-func IsExists(s *mgo.Session, userID string) (bool, error) {
+func (r *Repository) IsExists(s *mgo.Session, userID string) (bool, error) {
 	session := s.Copy()
 	c := session.DB("undercover").C("users")
 	var u User
@@ -35,7 +41,7 @@ func IsExists(s *mgo.Session, userID string) (bool, error) {
 }
 
 // FindByRoomID finds users by room id
-func FindByRoomID(s *mgo.Session, roomID string) ([]*User, error) {
+func (r *Repository) FindByRoomID(s *mgo.Session, roomID string) ([]*User, error) {
 	session := s.Copy()
 	c := session.DB("undercover").C("users")
 	var xs []*User
@@ -48,7 +54,7 @@ func FindByRoomID(s *mgo.Session, roomID string) ([]*User, error) {
 }
 
 // FindByID finds user by user id
-func FindByID(s *mgo.Session, userID string) (*User, error) {
+func (r *Repository) FindByID(s *mgo.Session, userID string) (*User, error) {
 	session := s.Copy()
 	c := session.DB("undercover").C("users")
 	var u User
@@ -61,7 +67,7 @@ func FindByID(s *mgo.Session, userID string) (*User, error) {
 }
 
 // RemoveByID deletes a user by user id
-func RemoveByID(s *mgo.Session, userID string) error {
+func (r *Repository) RemoveByID(s *mgo.Session, userID string) error {
 	session := s.Copy()
 	c := session.DB("undercover").C("users")
 	err := c.Remove(bson.M{"id": userID})
@@ -73,7 +79,7 @@ func RemoveByID(s *mgo.Session, userID string) error {
 }
 
 // RemoveAllByRoomID deletes all users in room id
-func RemoveAllByRoomID(s *mgo.Session, roomID string) error {
+func (r *Repository) RemoveAllByRoomID(s *mgo.Session, roomID string) error {
 	session := s.Copy()
 	c := session.DB("undercover").C("users")
 	_, err := c.RemoveAll(bson.M{"roomId": roomID})
@@ -85,7 +91,7 @@ func RemoveAllByRoomID(s *mgo.Session, roomID string) error {
 }
 
 // SetRole set user role
-func SetRole(s *mgo.Session, userID string, role int) error {
+func (r *Repository) SetRole(s *mgo.Session, userID string, role int) error {
 	session := s.Copy()
 	c := session.DB("undercover").C("users")
 	err := c.Update(bson.M{"id": userID}, bson.M{"role": role})

@@ -6,8 +6,12 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/WasinWatt/game-bot/room"
+	"github.com/WasinWatt/game-bot/vocab"
+
 	"github.com/WasinWatt/game-bot/api"
 	"github.com/WasinWatt/game-bot/config"
+	"github.com/WasinWatt/game-bot/user"
 	"github.com/jinzhu/configor"
 	"github.com/line/line-bot-sdk-go/linebot"
 	mgo "gopkg.in/mgo.v2"
@@ -29,7 +33,17 @@ func main() {
 
 	log.Println("Connected to DB")
 
-	apiHandler := api.NewHandler(bot, session)
+	// Repo initialize
+	userRepo := user.NewRepository()
+	roomRepo := room.NewRepository()
+	vocabRepo := vocab.NewRepository()
+
+	// Service initialize
+	userServ := user.NewService(userRepo, roomRepo)
+	roomServ := room.NewService(roomRepo)
+	vocabServ := vocab.NewService(vocabRepo)
+
+	apiHandler := api.NewHandler(bot, session, userServ, roomServ, vocabServ)
 
 	mux := http.NewServeMux()
 

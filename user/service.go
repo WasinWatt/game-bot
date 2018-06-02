@@ -12,10 +12,22 @@ var (
 	ErrNotFound = errors.New("user: not found")
 )
 
+type Service struct {
+	userdb *Repository
+	roomdb *room.Repository
+}
+
+func NewService(u *Repository, r *room.Repository) *Service {
+	return &Service{
+		userdb: u,
+		roomdb: r,
+	}
+}
+
 // JoinRoom joins user to the room
-func JoinRoom(s *mgo.Session, u *User) error {
+func (s *Service) JoinRoom(session *mgo.Session, u *User) error {
 	// check if user is in already in some room
-	exist, err := IsExists(s, u.ID)
+	exist, err := s.roomdb.IsExists(session, u.ID)
 	if err != nil {
 		return err
 	}
@@ -24,7 +36,7 @@ func JoinRoom(s *mgo.Session, u *User) error {
 	}
 
 	// check if the room number exists
-	exist, err = room.IsExists(s, u.RoomID)
+	exist, err = s.roomdb.IsExists(session, u.RoomID)
 	if err != nil {
 		return err
 	}
@@ -32,7 +44,7 @@ func JoinRoom(s *mgo.Session, u *User) error {
 		return errors.New("Room not found")
 	}
 
-	err = Register(s, u)
+	err = s.userdb.Register(session, u)
 	if err != nil {
 		return err
 	}
@@ -41,8 +53,8 @@ func JoinRoom(s *mgo.Session, u *User) error {
 }
 
 // Leave remove user from the database
-func Leave(s *mgo.Session, userID string) (bool, []*User, error) {
-	player, err := FindByID(s, userID)
+func (s *Service) Leave(session *mgo.Session, userID string) (bool, []*User, error) {
+	player, err := s.userdb.FindByID(session, userID)
 	if err == mgo.ErrNotFound {
 		return false, nil, ErrNotFound
 	}
@@ -50,19 +62,19 @@ func Leave(s *mgo.Session, userID string) (bool, []*User, error) {
 		return false, nil, err
 	}
 
-	isOwner, err := room.IsOwner(s, player.RoomID, userID)
+	isOwner, err := s.roomdb.IsOwner(session, player.RoomID, userID)
 	if err != nil {
 		return false, nil, err
 	}
 
 	if isOwner {
-		players, err := FindByRoomID(s, player.RoomID)
-		err = RemoveAllByRoomID(s, player.RoomID)
+		players, err := s.userdb.FindByRoomID(session, player.RoomID)
+		err = s.userdb.RemoveAllByRoomID(session, player.RoomID)
 		if err != nil {
 			return true, nil, err
 		}
 
-		err = room.RemoveByID(s, player.RoomID)
+		err = s.roomdb.RemoveByID(session, player.RoomID)
 		if err != nil {
 			return true, players, err
 		}
@@ -70,7 +82,7 @@ func Leave(s *mgo.Session, userID string) (bool, []*User, error) {
 		return true, players, nil
 	}
 
-	err = RemoveByID(s, userID)
+	err = s.userdb.RemoveByID(session, userID)
 	if err != nil {
 		return false, nil, err
 	}
@@ -79,8 +91,8 @@ func Leave(s *mgo.Session, userID string) (bool, []*User, error) {
 }
 
 // Get finds a user
-func Get(s *mgo.Session, userID string) (*User, error) {
-	user, err := FindByID(s, userID)
+func (s *Service) Get(session *mgo.Session, userID string) (*User, error) {
+	user, err := s.userdb.FindByID(session, userID)
 	if err == mgo.ErrNotFound {
 		return nil, ErrNotFound
 	}
@@ -91,8 +103,8 @@ func Get(s *mgo.Session, userID string) (*User, error) {
 }
 
 // GetAllByRoomID finds user by room ID
-func GetAllByRoomID(s *mgo.Session, roomID string) ([]*User, error) {
-	xs, err := FindByRoomID(s, roomID)
+func (s *Service) GetAllByRoomID(session *mgo.Session, roomID string) ([]*User, error) {
+	xs, err := s.userdb.FindByRoomID(session, roomID)
 	if err == mgo.ErrNotFound {
 		return nil, ErrNotFound
 	}
@@ -104,8 +116,8 @@ func GetAllByRoomID(s *mgo.Session, roomID string) ([]*User, error) {
 }
 
 // AddRole add role to a user
-func AddRole(s *mgo.Session, userID string, role int) error {
-	err := SetRole(s, userID, role)
+func (s *Service) AddRole(session *mgo.Session, userID string, role int) error {
+	err := s.userdb.SetRole(session, userID, role)
 	if err != nil {
 		return err
 	}

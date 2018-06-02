@@ -2,9 +2,19 @@ package vocab
 
 import mgo "gopkg.in/mgo.v2"
 
+type Service struct {
+	vocabdb *Repository
+}
+
+func NewService(v *Repository) *Service {
+	return &Service{
+		vocabdb: v,
+	}
+}
+
 // Add adds a new vocab
-func Add(s *mgo.Session, firstWord string, secondWord string) error {
-	err := Register(s, firstWord, secondWord)
+func (s *Service) Add(session *mgo.Session, firstWord string, secondWord string) error {
+	err := s.vocabdb.Register(session, firstWord, secondWord)
 	if err != nil {
 		return err
 	}
@@ -13,6 +23,6 @@ func Add(s *mgo.Session, firstWord string, secondWord string) error {
 }
 
 // Get returns a random vocab
-func Get(s *mgo.Session) (Vocab, error) {
+func (s *Service) Get(session *mgo.Session) (Vocab, error) {
 	return Vocab{}, nil
 }

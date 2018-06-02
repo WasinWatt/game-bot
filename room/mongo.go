@@ -5,8 +5,14 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+type Repository struct{}
+
+func NewRepository() *Repository {
+	return &Repository{}
+}
+
 // IsExists checks if room id exist
-func IsExists(s *mgo.Session, roomID string) (bool, error) {
+func (r *Repository) IsExists(s *mgo.Session, roomID string) (bool, error) {
 	session := s.Copy()
 	c := session.DB("undercover").C("rooms")
 	var room Room
@@ -23,7 +29,7 @@ func IsExists(s *mgo.Session, roomID string) (bool, error) {
 }
 
 // Register registers a room
-func Register(s *mgo.Session, roomID string, userID string) error {
+func (r *Repository) Register(s *mgo.Session, roomID string, userID string) error {
 	session := s.Copy()
 	c := session.DB("undercover").C("rooms")
 	err := c.Insert(bson.M{
@@ -37,7 +43,7 @@ func Register(s *mgo.Session, roomID string, userID string) error {
 }
 
 // IsOwner checks ownership
-func IsOwner(s *mgo.Session, roomID string, userID string) (bool, error) {
+func (r *Repository) IsOwner(s *mgo.Session, roomID string, userID string) (bool, error) {
 	session := s.Copy()
 	c := session.DB("undercover").C("rooms")
 	var room Room
@@ -54,7 +60,7 @@ func IsOwner(s *mgo.Session, roomID string, userID string) (bool, error) {
 }
 
 // RemoveByID deletes room by id
-func RemoveByID(s *mgo.Session, roomID string) error {
+func (r *Repository) RemoveByID(s *mgo.Session, roomID string) error {
 	session := s.Copy()
 	c := session.DB("undercover").C("rooms")
 	err := c.Remove(bson.M{"id": roomID})
