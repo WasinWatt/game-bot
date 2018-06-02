@@ -29,10 +29,8 @@ func main() {
 
 	log.Println("Connected to DB")
 
-	gameBot := &api.GameBot{
-		Client:  bot,
-		Session: session,
-	}
+	apiHandler := api.NewHandler(bot, session)
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
@@ -46,7 +44,7 @@ func main() {
 		w.Write(response)
 	})
 
-	mux.Handle("/api/", http.StripPrefix("/api", api.MakeAPIHandler(gameBot)))
+	mux.Handle("/api/", http.StripPrefix("/api", apiHandler.MakeHandler()))
 
 	must(err)
 

@@ -11,3 +11,8 @@ func Add(s *mgo.Session, firstWord string, secondWord string) error {
 
 	return nil
 }
+
+// Get returns a random vocab
+func Get(s *mgo.Session) (Vocab, error) {
+	return Vocab{}, nil
+}
