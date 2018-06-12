@@ -6,12 +6,11 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/WasinWatt/game-bot/room"
-	"github.com/WasinWatt/game-bot/vocab"
+	"github.com/WasinWatt/game-bot/mongo"
+	"github.com/WasinWatt/game-bot/service"
 
 	"github.com/WasinWatt/game-bot/api"
 	"github.com/WasinWatt/game-bot/config"
-	"github.com/WasinWatt/game-bot/user"
 	"github.com/jinzhu/configor"
 	"github.com/line/line-bot-sdk-go/linebot"
 	mgo "gopkg.in/mgo.v2"
@@ -34,16 +33,12 @@ func main() {
 	log.Println("Connected to DB")
 
 	// Repo initialize
-	userRepo := user.NewRepository()
-	roomRepo := room.NewRepository()
-	vocabRepo := vocab.NewRepository()
+	repo := mongo.New()
 
-	// Service initialize
-	userServ := user.NewService(userRepo, roomRepo)
-	roomServ := room.NewService(roomRepo)
-	vocabServ := vocab.NewService(vocabRepo)
+	// Service controller initialize
+	controller := service.New(repo)
 
-	apiHandler := api.NewHandler(bot, session, userServ, roomServ, vocabServ)
+	apiHandler := api.NewHandler(bot, session, controller)
 
 	mux := http.NewServeMux()
 
@@ -68,19 +63,6 @@ func main() {
 	}
 	http.ListenAndServe(":"+addr, mux)
 	log.Println("Listening on port: " + addr)
-}
-
-func ensureIndex(session *mgo.Session) {
-	c := session.DB("undercover").C("users")
-	index := mgo.Index{
-		Key:        []string{"id"},
-		Unique:     true,
-		DropDups:   true,
-		Background: true,
-		Sparse:     true,
-	}
-	err := c.EnsureIndex(index)
-	must(err)
 }
 
 func must(err error) {

@@ -7,30 +7,25 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/WasinWatt/game-bot/room"
+	"github.com/WasinWatt/game-bot/service"
 	"github.com/WasinWatt/game-bot/user"
-	"github.com/WasinWatt/game-bot/vocab"
 	"github.com/line/line-bot-sdk-go/linebot"
 	mgo "gopkg.in/mgo.v2"
 )
 
 // Handler is a api handler
 type Handler struct {
-	Client    *linebot.Client
-	Session   *mgo.Session
-	userServ  *user.Service
-	roomServ  *room.Service
-	vocabServ *vocab.Service
+	Client     *linebot.Client
+	Session    *mgo.Session
+	controller *service.Controller
 }
 
 // NewHandler creates new hanlder
-func NewHandler(lineClient *linebot.Client, session *mgo.Session, u *user.Service, r *room.Service, v *vocab.Service) *Handler {
+func NewHandler(lineClient *linebot.Client, session *mgo.Session, controller *service.Controller) *Handler {
 	return &Handler{
-		Client:    lineClient,
-		Session:   session,
-		userServ:  u,
-		roomServ:  r,
-		vocabServ: v,
+		Client:     lineClient,
+		Session:    session,
+		controller: controller,
 	}
 }
 
@@ -83,7 +78,7 @@ func (h *Handler) handleTextMessage(message *linebot.TextMessage, userID string)
 			replyDefaultMessage(h.Client, userID)
 			return nil
 		}
-		err := h.roomServ.Create(h.Session, words[1], userID)
+		err := h.controller.CreateRoom(h.Session, words[1], userID)
 		if err != nil {
 			return err
 		}
@@ -93,7 +88,7 @@ func (h *Handler) handleTextMessage(message *linebot.TextMessage, userID string)
 			RoomID: words[1],
 			Name:   words[2],
 		}
-		err = h.userServ.JoinRoom(h.Session, u)
+		err = h.controller.Join(h.Session, u)
 		if err != nil {
 			return err
 		}
@@ -113,7 +108,7 @@ func (h *Handler) handleTextMessage(message *linebot.TextMessage, userID string)
 				RoomID: words[1],
 				Name:   words[2],
 			}
-			err := h.userServ.JoinRoom(h.Session, u)
+			err := h.controller.Join(h.Session, u)
 			if err != nil {
 				replyInternalErrorMessage(h.Client, userID)
 				return err
@@ -126,8 +121,8 @@ func (h *Handler) handleTextMessage(message *linebot.TextMessage, userID string)
 	}
 
 	if command == "leave" || command == "quit" {
-		isOwner, players, err := h.userServ.Leave(h.Session, userID)
-		if err == user.ErrNotFound {
+		isOwner, players, err := h.controller.Leave(h.Session, userID)
+		if err == service.ErrNotFound {
 			replyMessage(h.Client, userID, "You are not in any room. Please join first.")
 			return nil
 		}
@@ -156,8 +151,8 @@ func (h *Handler) handleTextMessage(message *linebot.TextMessage, userID string)
 
 	}
 	if command == "list" {
-		x, err := h.userServ.Get(h.Session, userID)
-		if err == user.ErrNotFound {
+		x, err := h.controller.GetUser(h.Session, userID)
+		if err == service.ErrNotFound {
 			replyMessage(h.Client, userID, "You are not in any room. Please join first.")
 			return nil
 		}
@@ -166,8 +161,8 @@ func (h *Handler) handleTextMessage(message *linebot.TextMessage, userID string)
 			return err
 		}
 
-		players, err := h.userServ.GetAllByRoomID(h.Session, x.RoomID)
-		if err == user.ErrNotFound {
+		players, err := h.controller.GetAllUsersByRoomID(h.Session, x.RoomID)
+		if err == service.ErrNotFound {
 			replyMessage(h.Client, userID, "Nobody is in the room.")
 			return nil
 		}
@@ -186,7 +181,7 @@ func (h *Handler) handleTextMessage(message *linebot.TextMessage, userID string)
 	}
 
 	if command == "start" || command == "begin" {
-		players, err := h.userServ.GetAllByRoomID(h.Session, userID)
+		players, err := h.controller.GetAllUsersByRoomID(h.Session, userID)
 
 		if err != nil {
 			replyInternalErrorMessage(h.Client, userID)
@@ -200,7 +195,7 @@ func (h *Handler) handleTextMessage(message *linebot.TextMessage, userID string)
 			return nil
 		}
 
-		v, err := h.vocabServ.Get(h.Session)
+		v, err := h.controller.GetVocab(h.Session)
 
 		if err != nil {
 			replyInternalErrorMessage(h.Client, userID)
@@ -249,7 +244,7 @@ func (h *Handler) handleTextMessage(message *linebot.TextMessage, userID string)
 				userWord = normalWord
 			}
 
-			err := h.userServ.AddRole(h.Session, players[i].ID, shuffledList[i])
+			err := h.controller.AddUserRole(h.Session, players[i].ID, shuffledList[i])
 			if err != nil {
 				return err
 			}
@@ -265,7 +260,7 @@ func (h *Handler) handleTextMessage(message *linebot.TextMessage, userID string)
 			return nil
 		}
 
-		err := h.vocabServ.Add(h.Session, words[1], words[2])
+		err := h.controller.AddVocab(h.Session, words[1], words[2])
 		if err != nil {
 			replyInternalErrorMessage(h.Client, userID)
 		}
@@ -277,14 +272,14 @@ func (h *Handler) handleTextMessage(message *linebot.TextMessage, userID string)
 	}
 
 	if command == "mockstart" || command == "mockbegin" {
-		players, err := h.userServ.GetAllByRoomID(h.Session, userID)
+		players, err := h.controller.GetAllUsersByRoomID(h.Session, userID)
 
 		if err != nil {
 			replyInternalErrorMessage(h.Client, userID)
 			return err
 		}
 
-		v, err := h.vocabServ.Get(h.Session)
+		v, err := h.controller.GetVocab(h.Session)
 
 		if err != nil {
 			replyInternalErrorMessage(h.Client, userID)
@@ -321,7 +316,7 @@ func (h *Handler) handleTextMessage(message *linebot.TextMessage, userID string)
 			case 2:
 				userWord = normalWord
 			}
-			err := h.userServ.AddRole(h.Session, players[i].ID, shuffledList[i])
+			err := h.controller.AddUserRole(h.Session, players[i].ID, shuffledList[i])
 			if err != nil {
 				return err
 			}

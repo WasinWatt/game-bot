@@ -1,18 +1,13 @@
-package user
+package mongo
 
 import (
+	"github.com/WasinWatt/game-bot/user"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
 
-type Repository struct{}
-
-func NewRepository() *Repository {
-	return &Repository{}
-}
-
-// Register registers a user
-func (r *Repository) Register(s *mgo.Session, u *User) error {
+// RegisterUser registers a user
+func (r *Repository) RegisterUser(s *mgo.Session, u *user.User) error {
 	session := s.Copy()
 	c := session.DB("undercover").C("users")
 	err := c.Insert(bson.M{
@@ -23,11 +18,11 @@ func (r *Repository) Register(s *mgo.Session, u *User) error {
 	return err
 }
 
-// IsExists checks if the user exists
-func (r *Repository) IsExists(s *mgo.Session, userID string) (bool, error) {
+// IsUserExists checks if the user exists
+func (r *Repository) IsUserExists(s *mgo.Session, userID string) (bool, error) {
 	session := s.Copy()
 	c := session.DB("undercover").C("users")
-	var u User
+	var u user.User
 	err := c.Find(bson.M{"id": userID}).One(&u)
 	if err == mgo.ErrNotFound {
 		return false, nil
@@ -40,11 +35,11 @@ func (r *Repository) IsExists(s *mgo.Session, userID string) (bool, error) {
 	return true, nil
 }
 
-// FindByRoomID finds users by room id
-func (r *Repository) FindByRoomID(s *mgo.Session, roomID string) ([]*User, error) {
+// FindUsersByRoomID finds users by room id
+func (r *Repository) FindUsersByRoomID(s *mgo.Session, roomID string) ([]*user.User, error) {
 	session := s.Copy()
 	c := session.DB("undercover").C("users")
-	var xs []*User
+	var xs []*user.User
 	err := c.Find(bson.M{"roomId": roomID}).All(&xs)
 	if err != nil {
 		return nil, err
@@ -53,11 +48,11 @@ func (r *Repository) FindByRoomID(s *mgo.Session, roomID string) ([]*User, error
 	return xs, nil
 }
 
-// FindByID finds user by user id
-func (r *Repository) FindByID(s *mgo.Session, userID string) (*User, error) {
+// FindUserByID finds user by user id
+func (r *Repository) FindUserByID(s *mgo.Session, userID string) (*user.User, error) {
 	session := s.Copy()
 	c := session.DB("undercover").C("users")
-	var u User
+	var u user.User
 	err := c.Find(bson.M{"id": userID}).One(&u)
 	if err != nil {
 		return nil, err
@@ -66,8 +61,8 @@ func (r *Repository) FindByID(s *mgo.Session, userID string) (*User, error) {
 	return &u, nil
 }
 
-// RemoveByID deletes a user by user id
-func (r *Repository) RemoveByID(s *mgo.Session, userID string) error {
+// RemoveUserByID deletes a user by user id
+func (r *Repository) RemoveUserByID(s *mgo.Session, userID string) error {
 	session := s.Copy()
 	c := session.DB("undercover").C("users")
 	err := c.Remove(bson.M{"id": userID})
@@ -78,8 +73,8 @@ func (r *Repository) RemoveByID(s *mgo.Session, userID string) error {
 	return nil
 }
 
-// RemoveAllByRoomID deletes all users in room id
-func (r *Repository) RemoveAllByRoomID(s *mgo.Session, roomID string) error {
+// RemoveAllUsersByRoomID deletes all users in room id
+func (r *Repository) RemoveAllUsersByRoomID(s *mgo.Session, roomID string) error {
 	session := s.Copy()
 	c := session.DB("undercover").C("users")
 	_, err := c.RemoveAll(bson.M{"roomId": roomID})
@@ -90,8 +85,8 @@ func (r *Repository) RemoveAllByRoomID(s *mgo.Session, roomID string) error {
 	return nil
 }
 
-// SetRole set user role
-func (r *Repository) SetRole(s *mgo.Session, userID string, role int) error {
+// SetUserRole set user role
+func (r *Repository) SetUserRole(s *mgo.Session, userID string, role int) error {
 	session := s.Copy()
 	c := session.DB("undercover").C("users")
 	err := c.Update(bson.M{"id": userID}, bson.M{"role": role})
