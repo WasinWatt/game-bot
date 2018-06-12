@@ -99,9 +99,12 @@ func (h *Handler) handleTextMessage(message *linebot.TextMessage, userID string)
 		}
 
 		reply := "Room: " + words[1] + " creation successful!"
-		replyMessage(h.Client, userID, reply)
 
-	} else if command == "join" {
+		replyMessage(h.Client, userID, reply)
+		return nil
+	}
+
+	if command == "join" {
 		if len(words) < 3 {
 			replyDefaultMessage(h.Client, userID)
 		} else {
@@ -119,8 +122,10 @@ func (h *Handler) handleTextMessage(message *linebot.TextMessage, userID string)
 			reply := "Join room: " + words[1] + " successful!"
 			replyMessage(h.Client, userID, reply)
 		}
+		return nil
+	}
 
-	} else if command == "leave" || command == "quit" {
+	if command == "leave" || command == "quit" {
 		isOwner, players, err := h.userServ.Leave(h.Session, userID)
 		if err == user.ErrNotFound {
 			replyMessage(h.Client, userID, "You are not in any room. Please join first.")
@@ -147,8 +152,10 @@ func (h *Handler) handleTextMessage(message *linebot.TextMessage, userID string)
 		} else {
 			replyMessage(h.Client, userID, reply)
 		}
+		return nil
 
-	} else if command == "list" {
+	}
+	if command == "list" {
 		x, err := h.userServ.Get(h.Session, userID)
 		if err == user.ErrNotFound {
 			replyMessage(h.Client, userID, "You are not in any room. Please join first.")
@@ -175,8 +182,10 @@ func (h *Handler) handleTextMessage(message *linebot.TextMessage, userID string)
 			log.Println(players[i].Name)
 		}
 		replyMessage(h.Client, userID, reply)
+		return nil
+	}
 
-	} else if command == "start" || command == "begin" {
+	if command == "start" || command == "begin" {
 		players, err := h.userServ.GetAllByRoomID(h.Session, userID)
 
 		if err != nil {
@@ -186,9 +195,7 @@ func (h *Handler) handleTextMessage(message *linebot.TextMessage, userID string)
 
 		if len(players) < 5 {
 			for i := range players {
-				go func(id string) {
-					replyMessage(h.Client, id, "Need at least 5 players to begin the game")
-				}(players[i].ID)
+				replyMessage(h.Client, players[i].ID, "Need at least 5 players to begin the game")
 			}
 			return nil
 		}
@@ -249,8 +256,10 @@ func (h *Handler) handleTextMessage(message *linebot.TextMessage, userID string)
 
 			replyMessage(h.Client, players[i].ID, userWord)
 		}
+		return nil
+	}
 
-	} else if command == "add" || command == "vocab" {
+	if command == "add" || command == "vocab" {
 		if len(words) < 3 {
 			replyDefaultMessage(h.Client, userID)
 			return nil
@@ -263,8 +272,11 @@ func (h *Handler) handleTextMessage(message *linebot.TextMessage, userID string)
 
 		reply := "Add vocab successful!"
 		replyMessage(h.Client, userID, reply)
+		return nil
 
-	} else if command == "mockstart" || command == "mockbegin" {
+	}
+
+	if command == "mockstart" || command == "mockbegin" {
 		players, err := h.userServ.GetAllByRoomID(h.Session, userID)
 
 		if err != nil {
@@ -316,12 +328,10 @@ func (h *Handler) handleTextMessage(message *linebot.TextMessage, userID string)
 
 			replyMessage(h.Client, players[i].ID, userWord)
 		}
-
-	} else {
-		replyDefaultMessage(h.Client, userID)
-
+		return nil
 	}
 
+	replyDefaultMessage(h.Client, userID)
 	return nil
 }
 
@@ -336,8 +346,12 @@ func replyDefaultMessage(client *linebot.Client, userID string) {
 - join {เลขห้อง} {ชื่อที่ใช้เล่นเกม} : เข้าห้องเพื่อรอเล่นเกม
 - leave : ออกจากห้องเกมปัจจุบัน
 - help : แสดงข้อความคำสั่งทั้งหมด`
-
+	replySticker(client, userID, "2", "520")
 	replyMessage(client, userID, message)
+}
+
+func replySticker(client *linebot.Client, userID string, packageID string, stickerID string) {
+	client.PushMessage(userID, linebot.NewStickerMessage(packageID, stickerID)).Do()
 }
 
 func replyMessage(client *linebot.Client, userID string, message string) {
